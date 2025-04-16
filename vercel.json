@@ -1,14 +1,15 @@
 {
+    "version": 2,
     "builds": [
       {
-        "src": "api/get_transcript.py",
+        "src": "api/index.py",
         "use": "@vercel/python"
       }
     ],
     "routes": [
       {
-        "src": "/api/get_transcript",
-        "dest": "/api/get_transcript.py"
+        "src": "/api/get-transcript",
+        "dest": "api/index.py"
       }
     ]
   }

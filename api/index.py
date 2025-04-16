@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 from youtube_transcript_api.formatters import TextFormatter
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file - Vercel will use project env vars
+# load_dotenv() # No need to load .env in production on Vercel
 
 app = Flask(__name__)
 
@@ -25,11 +25,12 @@ def get_transcript():
     
     # Check if we have proxy credentials
     if not webshare_username or not webshare_password:
-        print("WARNING: WebShare proxy credentials not set. Request may be blocked by YouTube.")
+        print("WARNING: WebShare proxy credentials not set. Using direct connection.")
         use_proxy = False
     else:
         use_proxy = True
-        print("Using WebShare proxy for YouTube request.")
+        # Avoid printing credentials in logs
+        # print("Using WebShare proxy for YouTube request.") 
     
     languages_to_try = ['en', 'en-US', 'en-GB']  # Prioritize English
     
@@ -40,7 +41,7 @@ def get_transcript():
                 'http': f'http://{webshare_username}:{webshare_password}@proxy.webshare.io:80/',
                 'https': f'http://{webshare_username}:{webshare_password}@proxy.webshare.io:80/'
             }
-            print("Attempting to use WebShare proxy...")
+            # print("Attempting to use WebShare proxy...") # Avoid verbose logging
         else:
             proxies = None
         
@@ -48,29 +49,30 @@ def get_transcript():
         try:
             # List available transcripts
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=proxies)
-            print("Successfully connected to YouTube with proxy configuration.")
+            # print("Successfully connected to YouTube with proxy configuration.")
         except Exception as proxy_error:
             # If proxy fails, try without proxy as fallback
             if use_proxy:
                 print(f"Proxy connection failed: {str(proxy_error)}. Trying direct connection...")
                 proxies = None
                 transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=None)
-                print("Successfully connected to YouTube with direct connection.")
+                # print("Successfully connected to YouTube with direct connection.")
             else:
                 # Re-raise the exception if not using proxy
+                print(f"Direct connection failed: {str(proxy_error)}")
                 raise
         
         # Try finding the preferred languages first
         try:
             transcript = transcript_list.find_transcript(languages_to_try)
-            print(f"Found transcript in preferred language: {transcript.language}")
+            # print(f"Found transcript in preferred language: {transcript.language}")
         except NoTranscriptFound:
             print(f"No transcript found in preferred languages. Trying any available...")
             # Get first available transcript
             found_any = False
             for available_transcript in transcript_list:
                 transcript = available_transcript
-                print(f"Using first available transcript: {transcript.language}")
+                # print(f"Using first available transcript: {transcript.language}")
                 found_any = True
                 break
             if not found_any:
@@ -92,7 +94,7 @@ def get_transcript():
                 'details': f'Video ID: {video_id}'
             }), 404
         
-        print(f"Successfully fetched and formatted transcript for video_id: {video_id}")
+        # print(f"Successfully fetched and formatted transcript for video_id: {video_id}")
         return jsonify({'transcript': transcript_text})
     
     except TranscriptsDisabled:
@@ -114,12 +116,12 @@ def get_transcript():
     except Exception as e:
         error_message = f"An unexpected error occurred fetching transcript: {str(e)}"
         print(f"Error for {video_id}: {error_message}")
+        import traceback
+        traceback.print_exc() # Print full traceback for server errors
         return jsonify({
             'error': error_message,
             'details': str(e)
         }), 500
 
-if __name__ == '__main__':
-    print("Starting Flask server on port 8080...")
-    print(f"Test URL: http://localhost:8080/api/get-transcript?video_id=8vXoI7lUroQ")
-    app.run(host='0.0.0.0', port=8080, debug=True) 
+# Vercel expects the WSGI app object, often named 'app'
+# No need for app.run() here 
