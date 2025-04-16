@@ -36,31 +36,43 @@ def get_transcript():
     
     try:
         # Setup proxy configuration if available
+        proxies = None # Initialize proxies to None
         if use_proxy:
+            # Try common formats for proxy URLs
+            proxy_url_base = f"{webshare_username}:{webshare_password}@proxy.webshare.io:80"
             proxies = {
-                'http': f'http://{webshare_username}:{webshare_password}@proxy.webshare.io:80/',
-                'https': f'http://{webshare_username}:{webshare_password}@proxy.webshare.io:80/'
+                'http': f'http://{proxy_url_base}',
+                'https': f'http://{proxy_url_base}' # Common practice to use http for https proxy tunnel
+                # 'https': f'https://{proxy_url_base}' # Less common, but let's try if the above fails
             }
-            # print("Attempting to use WebShare proxy...") # Avoid verbose logging
+            print(f"Proxy configured: http://{proxy_url_base}")
         else:
-            proxies = None
+            print("No proxy configured, using direct connection.")
         
         # First attempt with proxy if configured
+        print(f"Attempting YouTubeTranscriptApi.list_transcripts with video_id: {video_id}")
+        if proxies:
+            print(f"Using proxy settings: {proxies}")
+        else:
+            print("Using direct connection (no proxy settings).")
+            
         try:
             # List available transcripts
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=proxies)
-            # print("Successfully connected to YouTube with proxy configuration.")
-        except Exception as proxy_error:
+            print("Successfully listed transcripts.") # Simplified log
+        except Exception as list_error:
+            print(f"list_transcripts failed: {type(list_error).__name__} - {str(list_error)}")
             # If proxy fails, try without proxy as fallback
             if use_proxy:
-                print(f"Proxy connection failed: {str(proxy_error)}. Trying direct connection...")
+                print(f"Initial attempt with proxy failed. Trying direct connection...")
                 proxies = None
+                # Retry listing without proxy
                 transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=None)
-                # print("Successfully connected to YouTube with direct connection.")
+                print("Successfully listed transcripts via direct connection fallback.")
             else:
-                # Re-raise the exception if not using proxy
-                print(f"Direct connection failed: {str(proxy_error)}")
-                raise
+                # If it failed without a proxy initially, re-raise the original error
+                print("Direct connection failed, re-raising error.")
+                raise list_error
         
         # Try finding the preferred languages first
         try:
