@@ -39,7 +39,7 @@ def get_transcript():
         proxies = None # Initialize proxies to None
         if use_proxy:
             # Try common formats for proxy URLs
-            proxy_url_base = f"{webshare_username}:{webshare_password}@proxy.webshare.io:80"
+            proxy_url_base = f"{webshare_username}:{webshare_password}@proxy.webshare.io:8080"
             proxies = {
                 'http': f'http://{proxy_url_base}',
                 'https': f'http://{proxy_url_base}' # Common practice to use http for https proxy tunnel
